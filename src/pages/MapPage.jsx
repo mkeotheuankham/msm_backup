@@ -5,6 +5,7 @@ import axios from "axios";
 import "leaflet/dist/leaflet.css";
 import DistrictSelector from "../components/ui/DistrictSelector";
 import LoadingBar from "../components/ui/LoadingBar";
+import FloatingButtons from "../components/ui/FloatingButtons";
 import ParcelLayer from "../components/map/ParcelLayer";
 import BasemapSelector from "../components/map/BasemapSelector";
 
@@ -347,9 +348,46 @@ const MapPage = () => {
     };
   }, []);
 
+  const [activeTool, setActiveTool] = useState(null);
+
+  // สำหรับเปลี่ยน cursor ตาม activeTool
+  useEffect(() => {
+    const mapContainer = document.querySelector(".leaflet-container");
+    if (!mapContainer) return;
+
+    if (activeTool === "point") {
+      mapContainer.style.cursor = "crosshair";
+    } else if (activeTool === "line" || activeTool === "area") {
+      mapContainer.style.cursor = "cell";
+    } else {
+      mapContainer.style.cursor = "default";
+    }
+  }, [activeTool]);
+
+  // Undo, Redo, Save handlers
+  const handleUndo = () => {
+    console.log("Undo clicked");
+  };
+
+  const handleRedo = () => {
+    console.log("Redo clicked");
+  };
+
+  const handleSave = () => {
+    console.log("Save clicked");
+  };
+
   return (
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
       <LoadingBar isLoading={isLoading} loadingProgress={loadingProgress} />
+
+      <FloatingButtons
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onSave={handleSave}
+      />
 
       <MapContainer
         center={bounds ? bounds.getCenter() : [17.985375, 103.968534]}
