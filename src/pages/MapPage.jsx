@@ -93,7 +93,7 @@ const MapPage = () => {
     },
     {
       name: "hadxaifong",
-      displayName: "ຫາດໄຊຟອງ",
+      displayName: "ຫາດຊາຍຟອງ",
       endpoint: "https://msmapi.up.railway.app/api/rest/hadxaifong",
       dataKey: "cadastre_parcel_details_0107",
       checked: false,
