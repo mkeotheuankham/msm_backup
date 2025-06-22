@@ -68,7 +68,7 @@ const DistrictSelector = ({ districts, handleDistrictToggle }) => {
         <button style={toggleButtonStyle} onClick={toggleSidebar}>
           {isOpen ? "×" : "≡"}
         </button>
-        <div style={verticalLabelStyle}>ແຜນທີ່ຕອນດິນ</div>
+        <div style={verticalLabelStyle}>ແຜນທີ່ຕອນດິນ LLR</div>
       </div>
 
       {/* Sidebar ด้านขวา */}

@@ -1,8 +1,21 @@
-// components/map/BasemapSelector.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import { LayersControl, TileLayer } from "react-leaflet";
 
 const BasemapSelector = () => {
+  useEffect(() => {
+    const layersControl = document.querySelector(".leaflet-control-layers");
+    if (layersControl) {
+      Object.assign(layersControl.style, {
+        backgroundColor: "rgba(255, 255, 255, 0.6)", // พื้นหลังโปร่งแสง
+        boxShadow: "none",
+        backdropFilter: "blur(4px)", // เพิ่มความเบลอแบบ glass
+        border: "none",
+        borderRadius: "8px",
+        padding: "4px",
+      });
+    }
+  }, []);
+
   return (
     <LayersControl position="topleft">
       <LayersControl.BaseLayer checked name="OpenStreetMap">
