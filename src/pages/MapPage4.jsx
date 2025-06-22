@@ -1,0 +1,149 @@
+import React, { useState } from "react";
+import {
+  MapContainer,
+  LayersControl,
+  TileLayer,
+  Marker,
+  Popup,
+} from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import "./MapPage.css";
+import GeomanToolbar from "../components/map/GeomanToolbar"; // ນຳເຂົ້າ GeomanToolbar
+import CursorStyle from "../components/editor/CursorStyle"; // ນຳເຂົ້າ CursorStyle
+import CSVFileLocal from "../utils/CSVFileLocal";
+
+// Fix for default marker icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require("leaflet/dist/images/marker-icon-2x.png").default,
+  iconUrl: require("leaflet/dist/images/marker-icon.png").default,
+  shadowUrl: require("leaflet/dist/images/marker-shadow.png").default,
+});
+
+const MapPage = () => {
+  const [markers, setMarkers] = useState([]);
+  const [setSelectedMarker] = useState(null);
+
+  const layers = [
+    {
+      name: "OSM Standard",
+      url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      checked: true,
+    },
+    {
+      name: "Stadia Satellite",
+      url: "https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg",
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
+    },
+    {
+      name: "Carto Voyager",
+      url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png",
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    },
+    {
+      name: "ArcGIS Imagery",
+      url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      attribution:
+        "Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community",
+    },
+  ];
+
+  const handleMapClick = (e) => {
+    const newMarker = {
+      position: [e.latlng.lat, e.latlng.lng],
+      name: `Marker ${markers.length + 1}`,
+      type: "point",
+    };
+    setMarkers([...markers, newMarker]);
+    setSelectedMarker(newMarker);
+  };
+
+  return (
+    <div className="map-page">
+      <div className="map-container">
+        {/* Sidebar */}
+        <div className="sidebar">
+          <h3>Search Features</h3>
+          <input type="text" placeholder="Search..." className="search-box" />
+          {/* ใส่ list ของ features ถ้าต้องการ */}
+        </div>
+
+        <div className="map-wrapper">
+          {/* Map Control Buttons */}
+          <div className="tool-buttons">
+            <button>Point</button>
+            <button>Line</button>
+            <button>Area</button>
+            <button>Undo</button>
+            <button>Redo</button>
+            <button>import CSV</button>
+            <button style={{ backgroundColor: "#007bff", color: "#fff" }}>
+              Save
+            </button>
+          </div>
+
+          {/* MapContainer */}
+          <MapContainer
+            center={[17.985375, 103.968534]}
+            zoom={7}
+            style={{ height: "100%", width: "100%" }}
+            scrollWheelZoom={true}
+            zoomControl={true}
+            doubleClickZoom={true}
+            dragging={true}
+            attributionControl={false}
+            onClick={handleMapClick}
+          >
+            <CursorStyle cursorType="crosshair" />
+
+            <GeomanToolbar
+              onFeatureCreate={(feature) => {
+                console.log("Feature created:", feature);
+              }}
+              onFeatureRemove={(id) => {
+                console.log("Feature removed:", id);
+              }}
+              onFeatureClick={(feature) => {
+                console.log("Feature clicked:", feature);
+              }}
+            />
+
+            <LayersControl position="topright">
+              {layers.map((layer, index) => (
+                <LayersControl.BaseLayer
+                  key={index}
+                  name={layer.name}
+                  checked={layer.checked}
+                >
+                  <TileLayer
+                    url={layer.url}
+                    attribution={layer.attribution}
+                    minZoom={0}
+                    maxZoom={21}
+                    detectRetina={false}
+                  />
+                </LayersControl.BaseLayer>
+              ))}
+
+              {markers.map((marker, index) => (
+                <Marker key={index} position={marker.position}>
+                  <Popup>
+                    <h3>{marker.name}</h3>
+                    <p>Type: {marker.type}</p>
+                  </Popup>
+                </Marker>
+              ))}
+            </LayersControl>
+            <CSVFileLocal />
+          </MapContainer>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MapPage;
