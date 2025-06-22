@@ -29,6 +29,8 @@ const BasemapSelector = () => {
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          minZoom={0}
+          maxZoom={21}
         />
       </LayersControl.BaseLayer>
 
@@ -36,6 +38,8 @@ const BasemapSelector = () => {
         <TileLayer
           url="https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg"
           attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>'
+          minZoom={0}
+          maxZoom={21}
         />
       </LayersControl.BaseLayer>
 
@@ -43,6 +47,8 @@ const BasemapSelector = () => {
         <TileLayer
           url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png"
           attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          minZoom={0}
+          maxZoom={21}
         />
       </LayersControl.BaseLayer>
 
@@ -50,6 +56,8 @@ const BasemapSelector = () => {
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution="Tiles &copy; Esri"
+          minZoom={0}
+          maxZoom={21}
         />
       </LayersControl.BaseLayer>
     </LayersControl>
