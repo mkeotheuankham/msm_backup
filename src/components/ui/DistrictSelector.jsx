@@ -1,82 +1,115 @@
-import React from "react";
+import React, { useState } from "react";
 
 const DistrictSelector = ({ districts, handleDistrictToggle }) => {
-  const controlPanelStyle = {
-    position: "absolute",
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen);
+  };
+
+  const sidebarStyle = {
+    position: "fixed",
+    right: isOpen ? "0" : "-250px", // ขวาเหมือนเดิม
     top: "20px",
-    right: "20px",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    padding: "15px",
-    borderRadius: "10px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+    width: "250px",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    color: "white",
+    transition: "right 0.3s ease",
     zIndex: 1000,
-    maxHeight: "80vh",
+    padding: "15px",
+    borderRadius: "5px 0 0 5px",
+    boxShadow: "-2px 0 10px rgba(0,0,0,0.5)",
+    maxHeight: "90vh",
     overflowY: "auto",
-    backdropFilter: "blur(15px)",
-    border: "1px solid rgba(255,255,255,0.15)",
-    minWidth: "250px",
-    color: "#fff",
+    fontFamily: "Phetsarath OT, sans-serif",
+  };
+
+  const toggleButtonContainerStyle = {
+    position: "fixed",
+    right: isOpen ? "250px" : "0",
+    top: "30px",
+    zIndex: 999,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    transition: "right 0.3s ease",
+  };
+
+  const toggleButtonStyle = {
+    width: "40px",
+    height: "40px",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    color: "white",
+    border: "none",
+    borderRadius: "5px 0 0 5px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px",
+    marginBottom: "6px",
+  };
+
+  const verticalLabelStyle = {
+    writingMode: "vertical-rl",
+    transform: "rotate(180deg)",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    color: "white",
+    padding: "5px 2px",
+    borderRadius: "5px 0 0 5px",
+    fontSize: "18px",
+    textAlign: "center",
   };
 
   return (
-    <div style={controlPanelStyle}>
-      <h3
-        style={{
-          margin: "0 0 15px 0",
-          color: "#fff",
-          textShadow: "0 1px 3px rgba(0,0,0,0.3)",
-        }}
-      >
-        ເລືອກເມືອງ
-      </h3>
-      {districts.map((d) => (
-        <div key={d.name} style={{ margin: "8px 0" }}>
-          <label
-            style={{
-              display: "flex",
-              alignItems: "center",
-              cursor: "pointer",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={d.checked}
-              onChange={() => handleDistrictToggle(d.name)}
-              disabled={d.loading}
+    <>
+      {/* ปุ่ม toggle + ป้าย label แนวตั้ง */}
+      <div style={toggleButtonContainerStyle}>
+        <button style={toggleButtonStyle} onClick={toggleSidebar}>
+          {isOpen ? "×" : "≡"}
+        </button>
+        <div style={verticalLabelStyle}>ແຜນທີ່ຕອນດິນ</div>
+      </div>
+
+      {/* Sidebar ด้านขวา */}
+      <div style={sidebarStyle}>
+        <h3 style={{ margin: "0 0 15px 0", fontSize: "18px" }}>ເລືອກເມືອງ</h3>
+        {districts.map((d) => (
+          <div key={d.name} style={{ margin: "6px 0" }}>
+            <label
               style={{
-                marginRight: "10px",
-                width: "16px",
-                height: "16px",
+                display: "flex",
+                alignItems: "center",
                 cursor: "pointer",
-                accentColor: d.color,
-              }}
-            />
-            <span
-              style={{
-                color: d.color,
-                fontWeight: "600",
-                fontSize: "14px",
-                textShadow: "0 1px 2px rgba(0,0,0,0.3)",
               }}
             >
-              {d.displayName}
-              {d.loading && (
-                <span style={{ color: "#ddd", fontSize: "12px" }}>
-                  {" "}
-                  (ກຳລັງໂຫຼດ...)
-                </span>
-              )}
-              {d.error && (
-                <span style={{ color: "#ff9999", fontSize: "12px" }}>
-                  {" "}
-                  (ຜິດພາດ)
-                </span>
-              )}
-            </span>
-          </label>
-        </div>
-      ))}
-    </div>
+              <input
+                type="checkbox"
+                checked={d.checked}
+                onChange={() => handleDistrictToggle(d.name)}
+                disabled={d.loading}
+                style={{
+                  marginRight: "10px",
+                  width: "16px",
+                  height: "16px",
+                  cursor: "pointer",
+                  accentColor: d.color,
+                }}
+              />
+              <span
+                style={{
+                  color: d.color,
+                  fontWeight: "bold",
+                  fontSize: "15px",
+                }}
+              >
+                {d.displayName}
+              </span>
+            </label>
+          </div>
+        ))}
+      </div>
+    </>
   );
 };
 
