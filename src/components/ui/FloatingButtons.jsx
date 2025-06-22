@@ -14,7 +14,13 @@ const tools = [
   { name: "area", label: "Area", icon: <FiMap /> },
 ];
 
-const FloatingButtons = ({ activeTool, setActiveTool }) => {
+const FloatingButtons = ({
+  activeTool,
+  setActiveTool,
+  onUndo,
+  onRedo,
+  onSave,
+}) => {
   const handleToggle = (toolName) => {
     setActiveTool((prev) => (prev === toolName ? null : toolName));
   };
@@ -73,11 +79,11 @@ const FloatingButtons = ({ activeTool, setActiveTool }) => {
 
       <div style={{ width: 1, background: "rgba(0,0,0,0.15)" }} />
 
-      <button style={baseStyle} title="Undo">
+      <button style={baseStyle} title="Undo" onClick={onUndo}>
         <FiRotateCcw />
         Undo
       </button>
-      <button style={baseStyle} title="Redo">
+      <button style={baseStyle} title="Redo" onClick={onRedo}>
         <FiRotateCw />
         Redo
       </button>
@@ -90,6 +96,7 @@ const FloatingButtons = ({ activeTool, setActiveTool }) => {
           fontWeight: 600,
         }}
         title="Save"
+        onClick={onSave}
       >
         <FiSave />
         Save

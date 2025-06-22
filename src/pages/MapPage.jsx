@@ -3,6 +3,9 @@ import { MapContainer, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import axios from "axios";
 import "leaflet/dist/leaflet.css";
+import "@geoman-io/leaflet-geoman-free";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+import GeomanControl from "../components/map/GeomanControl";
 import DistrictSelector from "../components/ui/DistrictSelector";
 import LoadingBar from "../components/ui/LoadingBar";
 import FloatingButtons from "../components/ui/FloatingButtons";
@@ -348,34 +351,67 @@ const MapPage = () => {
     };
   }, []);
 
+  // สร้าง state เก็บ layer ที่วาด
+  const [drawnLayers, setDrawnLayers] = useState([]);
   const [activeTool, setActiveTool] = useState(null);
 
-  // สำหรับเปลี่ยน cursor ตาม activeTool
-  useEffect(() => {
-    const mapContainer = document.querySelector(".leaflet-container");
-    if (!mapContainer) return;
+  // ฟังก์ชันจัดการ event create ของ Geoman
+  const handleCreate = (e) => {
+    const layer = e.layer;
 
-    if (activeTool === "point") {
-      mapContainer.style.cursor = "crosshair";
-    } else if (activeTool === "line" || activeTool === "area") {
-      mapContainer.style.cursor = "cell";
-    } else {
-      mapContainer.style.cursor = "default";
-    }
-  }, [activeTool]);
+    setDrawnLayers((prev) => [...prev, layer]);
+    console.log("Created layer:", layer);
+  };
 
-  // Undo, Redo, Save handlers
+  // ฟังก์ชัน Undo (ลบ layer ล่าสุด)
   const handleUndo = () => {
-    console.log("Undo clicked");
+    setDrawnLayers((prev) => {
+      if (prev.length === 0) return prev;
+      const newLayers = prev.slice(0, prev.length - 1);
+      return newLayers;
+    });
   };
 
+  // ฟังก์ชัน Redo (ถ้ามีประวัติไว้เก็บไว้ ต้องทำเพิ่มเอง)
   const handleRedo = () => {
-    console.log("Redo clicked");
+    // สำหรับตัวอย่างนี้ยังไม่ทำ
+    alert("Redo ยังไม่พร้อมใช้งาน");
   };
 
+  // ฟังก์ชัน Save
   const handleSave = () => {
-    console.log("Save clicked");
+    const geojsons = drawnLayers.map((layer) => layer.toGeoJSON());
+    console.log("Saved GeoJSON:", geojsons);
+    alert("บันทึกข้อมูลลง console แล้ว");
   };
+
+  // เมื่อ drawnLayers เปลี่ยน ต้องอัพเดต map
+  // ใช้ useEffect เพื่อเพิ่ม/ลบ layers บน map
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+
+    // เคลียร์ layer เก่า
+    map.eachLayer((layer) => {
+      if (
+        layer?.pm?.enabled ||
+        drawnLayers.find((l) => l._leaflet_id === layer._leaflet_id) ===
+          undefined
+      ) {
+        // do nothing เพราะอาจเป็น basemap หรืออื่น ๆ
+      }
+    });
+
+    // เพิ่ม layers ที่วาด
+    drawnLayers.forEach((layer) => {
+      if (!map.hasLayer(layer)) {
+        layer.addTo(map);
+      }
+    });
+  }, [drawnLayers]);
 
   return (
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
@@ -396,13 +432,21 @@ const MapPage = () => {
         bounds={bounds}
         boundsOptions={{ padding: [50, 50] }}
         zoomControl={false}
+        whenCreated={(mapInstance) => (mapRef.current = mapInstance)}
       >
         <BasemapSelector />
+
         <ZoomControl position="bottomright" />
         <ParcelLayer
           districts={districts}
           getParcelStyle={getParcelStyle}
           onEachFeature={onEachFeature}
+        />
+
+        <GeomanControl
+          activeTool={activeTool}
+          onCreate={handleCreate}
+          // onEdit, onDelete ถ้าต้องการ เพิ่มได้
         />
       </MapContainer>
 
