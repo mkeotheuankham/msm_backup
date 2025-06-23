@@ -3,6 +3,7 @@ import {
   FiCircle,
   FiTrendingUp,
   FiMap,
+  FiUpload,
   FiRotateCcw,
   FiRotateCw,
   FiSave,
@@ -17,6 +18,7 @@ const tools = [
 const FloatingButtons = ({
   activeTool,
   setActiveTool,
+  onUploadCSV,
   onUndo,
   onRedo,
   onSave,
@@ -51,7 +53,7 @@ const FloatingButtons = ({
     <div
       style={{
         position: "absolute",
-        top: 16,
+        top: 28,
         left: "50%",
         transform: "translateX(-50%)",
         background: "rgba(255, 255, 255, 0.2)",
@@ -79,6 +81,10 @@ const FloatingButtons = ({
 
       <div style={{ width: 1, background: "rgba(0,0,0,0.15)" }} />
 
+      <button style={baseStyle} title="Upload CSV" onClick={onUploadCSV}>
+        <FiUpload />
+        Upload CSV
+      </button>
       <button style={baseStyle} title="Undo" onClick={onUndo}>
         <FiRotateCcw />
         Undo

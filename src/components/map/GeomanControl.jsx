@@ -9,7 +9,7 @@ const GeomanControl = ({ activeTool, onCreate, onEdit, onDelete }) => {
   useEffect(() => {
     if (!map?.pm) return;
 
-    // 💡 เพิ่ม Geoman control toolbar (1 ครั้ง)
+    // ปิด toolbar Geoman
     map.pm.addControls({
       position: "topleft",
       drawMarker: false,
@@ -24,10 +24,7 @@ const GeomanControl = ({ activeTool, onCreate, onEdit, onDelete }) => {
       removalMode: false,
     });
 
-    // 📌 ตรวจสอบ draw modes ที่มีให้ใช้
-    console.log("Available draw modes:", Object.keys(map.pm.Draw));
-
-    // 🪝 Event listener
+    // Events
     map.on("pm:create", (e) => onCreate?.(e));
     map.on("pm:edit", (e) => onEdit?.(e));
     map.on("pm:remove", (e) => onDelete?.(e));
@@ -43,29 +40,22 @@ const GeomanControl = ({ activeTool, onCreate, onEdit, onDelete }) => {
   useEffect(() => {
     if (!map?.pm) return;
 
-    // ปิดโหมดวาดก่อน
+    // ปิดการวาดเดิม
     map.pm.disableDraw("Marker");
     map.pm.disableDraw("Polygon");
     map.pm.disableDraw("Line");
 
-    // ✅ เลือกเปิดเฉพาะ activeTool
+    // เปิดเครื่องมือที่เลือก
     switch (activeTool) {
       case "point":
         map.pm.enableDraw("Marker", { snappable: true });
         break;
-
       case "line":
-        if ("Line" in map.pm.Draw) {
-          map.pm.enableDraw("Line", { snappable: true });
-        } else {
-          console.warn("Draw mode 'Line' is not available.");
-        }
+        map.pm.enableDraw("Line", { snappable: true });
         break;
-
       case "area":
         map.pm.enableDraw("Polygon", { snappable: true });
         break;
-
       default:
         break;
     }

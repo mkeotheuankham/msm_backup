@@ -385,6 +385,20 @@ const MapPage = () => {
     alert("บันทึกข้อมูลลง console แล้ว");
   };
 
+  const handleUploadCSV = () => {
+    alert("Upload CSV ยังไม่พร้อมใช้งาน");
+  };
+
+  const handleEdit = (e) => {
+    console.log("Edited layers:", e.layers);
+    alert("แก้ไขรูปทรงแล้ว (ดูข้อมูลใน console)");
+  };
+
+  const handleDelete = (e) => {
+    console.log("Deleted layers:", e.layers);
+    alert("ลบรูปทรงแล้ว (ดูข้อมูลใน console)");
+  };
+
   // เมื่อ drawnLayers เปลี่ยน ต้องอัพเดต map
   // ใช้ useEffect เพื่อเพิ่ม/ลบ layers บน map
   const mapRef = useRef(null);
@@ -420,6 +434,7 @@ const MapPage = () => {
       <FloatingButtons
         activeTool={activeTool}
         setActiveTool={setActiveTool}
+        onUploadCSV={handleUploadCSV}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onSave={handleSave}
@@ -446,7 +461,8 @@ const MapPage = () => {
         <GeomanControl
           activeTool={activeTool}
           onCreate={handleCreate}
-          // onEdit, onDelete ถ้าต้องการ เพิ่มได้
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </MapContainer>
 
