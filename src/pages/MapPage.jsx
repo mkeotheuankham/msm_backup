@@ -16,7 +16,7 @@ import "leaflet-measure";
 import "leaflet.polylinemeasure";
 import "leaflet.polylinemeasure/Leaflet.PolylineMeasure.css";
 
-// ຕັ້ງຄ່າໄອຄອນ Marker ເລີ່ມຕົ້ນ
+// Fix default marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl:
@@ -136,12 +136,19 @@ const MapPage = () => {
       hasLoaded: false,
     },
   ]);
+
   const [bounds, setBounds] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const cancelRequest = useRef(null);
+  const mapRef = useRef(null);
+  const drawnItemsRef = useRef(new L.FeatureGroup());
+  const redoStack = useRef([]);
+  const undoStack = useRef([]);
+  const [activeDrawType, setActiveDrawType] = useState(null);
+  const [drawer, setDrawer] = useState(null);
 
-  // ອັບເດດຂອບເຂດຂອງແຜນທີ່
+  // Update map bounds based on loaded parcels
   const updateBounds = useCallback(() => {
     const allParcels = districts
       .flatMap((d) => (d.checked && d.parcels ? d.parcels : []))
@@ -161,7 +168,7 @@ const MapPage = () => {
     }
   }, [districts]);
 
-  // ຮູບແບບຂອງດິນ
+  // Get style for parcels based on district
   const getParcelStyle = useCallback(
     (districtName) => {
       const district = districts.find((d) => d.name === districtName);
@@ -179,7 +186,7 @@ const MapPage = () => {
     [districts]
   );
 
-  // ສ້າງເນື້ອຫາ Popup
+  // Create popup content for parcels
   const createPopupContent = useCallback(
     (properties) => {
       const {
@@ -245,7 +252,7 @@ const MapPage = () => {
     [districts]
   );
 
-  // ຈັດການກັບແຕ່ລະລັກສະນະຂອງດິນ
+  // Handle feature interaction
   const onEachFeature = useCallback(
     (feature, layer) => {
       if (feature.properties) {
@@ -255,7 +262,7 @@ const MapPage = () => {
     [createPopupContent]
   );
 
-  // ດຶງຂໍ້ມູນເມືອງ
+  // Fetch district data
   const fetchDistrictData = useCallback(
     async (districtName) => {
       const districtIndex = districts.findIndex((d) => d.name === districtName);
@@ -325,7 +332,7 @@ const MapPage = () => {
     [districts, updateBounds]
   );
 
-  // ສະຫຼັບການເລືອກເມືອງ
+  // Toggle district selection
   const handleDistrictToggle = useCallback(
     (districtName) => {
       setDistricts((prev) => {
@@ -345,26 +352,23 @@ const MapPage = () => {
     [fetchDistrictData, updateBounds]
   );
 
-  // ຍົກເລີກຄຳຂໍ້ມູນເມື່ອຄອມໂພເນັນຖືກລົບ
+  // Cancel request on unmount
   useEffect(() => {
     return () => {
       if (cancelRequest.current) {
-        cancelRequest.current("ຍົກເລີກຄຳຂໍ້ມູນເນື່ອງຈາກຄອມໂພເນັນຖືກລົບ");
+        cancelRequest.current("Component unmounted");
       }
     };
   }, []);
 
-  const mapRef = useRef(null);
-  const drawnItemsRef = useRef(new L.FeatureGroup());
-  const redoStack = useRef([]);
-  const [activeDrawType, setActiveDrawType] = useState(null);
-
+  // Drawing functions
   const handleUndo = () => {
     const layers = drawnItemsRef.current.getLayers();
     if (layers.length > 0) {
       const lastLayer = layers[layers.length - 1];
       drawnItemsRef.current.removeLayer(lastLayer);
       redoStack.current.push(lastLayer);
+      undoStack.current = undoStack.current.slice(0, -1);
     }
   };
 
@@ -372,11 +376,16 @@ const MapPage = () => {
     const layer = redoStack.current.pop();
     if (layer) {
       drawnItemsRef.current.addLayer(layer);
+      undoStack.current.push(layer);
     }
   };
 
   const handleSave = () => {
     const geojson = drawnItemsRef.current.toGeoJSON();
+    if (geojson.features.length === 0) {
+      alert("No drawings to save");
+      return;
+    }
     const blob = new Blob([JSON.stringify(geojson, null, 2)], {
       type: "application/json",
     });
@@ -384,9 +393,10 @@ const MapPage = () => {
   };
 
   const handleUploadCSV = () => {
-    alert("Upload CSV ยังไม่พร้อมใช้งาน");
+    alert("Upload CSV function will be implemented later");
   };
 
+  // Initialize map and draw controls
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
@@ -397,6 +407,7 @@ const MapPage = () => {
       draw: false,
       edit: {
         featureGroup: drawnItemsRef.current,
+        edit: false,
       },
     });
 
@@ -407,38 +418,61 @@ const MapPage = () => {
     };
   }, []);
 
+  // Handle drawing tools
   useEffect(() => {
-    if (!mapRef.current || !activeDrawType) return;
-    const map = mapRef.current;
+    if (!mapRef.current || !activeDrawType) {
+      if (drawer) {
+        drawer.disable();
+        setDrawer(null);
+      }
+      return;
+    }
 
-    let drawer = null;
+    const map = mapRef.current;
+    let newDrawer = null;
+
     const handleCreate = (e) => {
-      drawnItemsRef.current.addLayer(e.layer);
-      setActiveDrawType(null);
+      const layer = e.layer;
+      drawnItemsRef.current.addLayer(layer);
+      undoStack.current.push(layer);
+      redoStack.current = [];
     };
 
     switch (activeDrawType) {
       case "polygon":
-        drawer = new L.Draw.Polygon(map);
+        newDrawer = new L.Draw.Polygon(map, {
+          shapeOptions: {
+            color: "#3388ff",
+            fillColor: "#3388ff",
+            fillOpacity: 0.5,
+            weight: 3,
+          },
+        });
         break;
       case "polyline":
-        drawer = new L.Draw.Polyline(map);
+        newDrawer = new L.Draw.Polyline(map, {
+          shapeOptions: {
+            color: "#ff5733",
+            weight: 4,
+          },
+        });
         break;
       case "marker":
-        drawer = new L.Draw.Marker(map);
+        newDrawer = new L.Draw.Marker(map);
         break;
       default:
         return;
     }
 
-    if (drawer) {
-      drawer.enable();
-      map.once(L.Draw.Event.CREATED, handleCreate);
+    if (newDrawer) {
+      newDrawer.enable();
+      map.on(L.Draw.Event.CREATED, handleCreate);
+      setDrawer(newDrawer);
     }
 
     return () => {
       map.off(L.Draw.Event.CREATED, handleCreate);
-      drawer?.disable();
+      newDrawer?.disable();
     };
   }, [activeDrawType]);
 
@@ -446,13 +480,15 @@ const MapPage = () => {
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
       <LoadingBar isLoading={isLoading} loadingProgress={loadingProgress} />
       <FloatingButtons
-        activeTool={null}
-        setActiveTool={() => {}}
+        activeTool={activeDrawType}
+        setActiveTool={setActiveDrawType}
         onUploadCSV={handleUploadCSV}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onSave={handleSave}
         setActiveDrawType={setActiveDrawType}
+        canUndo={undoStack.current.length > 0}
+        canRedo={redoStack.current.length > 0}
       />
       <MapContainer
         center={bounds ? bounds.getCenter() : [17.985375, 103.968534]}
@@ -478,4 +514,5 @@ const MapPage = () => {
     </div>
   );
 };
+
 export default MapPage;
