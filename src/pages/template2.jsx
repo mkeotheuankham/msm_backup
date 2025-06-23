@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { MapContainer, ZoomControl } from "react-leaflet";
+import { MapContainer, ZoomControl, useMap } from "react-leaflet";
 import L from "leaflet";
 import axios from "axios";
 import "leaflet/dist/leaflet.css";
@@ -357,7 +357,6 @@ const MapPage = () => {
   const mapRef = useRef(null);
   const drawnItemsRef = useRef(new L.FeatureGroup());
   const redoStack = useRef([]);
-  const [activeDrawType, setActiveDrawType] = useState(null);
 
   const handleUndo = () => {
     const layers = drawnItemsRef.current.getLayers();
@@ -394,7 +393,14 @@ const MapPage = () => {
 
     const drawControl = new L.Control.Draw({
       position: "topright",
-      draw: false,
+      draw: {
+        polygon: true,
+        polyline: true,
+        rectangle: true,
+        marker: true,
+        circle: false,
+        circlemarker: false,
+      },
       edit: {
         featureGroup: drawnItemsRef.current,
       },
@@ -402,45 +408,25 @@ const MapPage = () => {
 
     map.addControl(drawControl);
 
+    map.on(L.Draw.Event.CREATED, function (e) {
+      const layer = e.layer;
+      drawnItemsRef.current.addLayer(layer);
+    });
+
     return () => {
       map.removeControl(drawControl);
     };
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !activeDrawType) return;
+    if (!mapRef.current || !mapRef.current) return;
     const map = mapRef.current;
-
-    let drawer = null;
-    const handleCreate = (e) => {
-      drawnItemsRef.current.addLayer(e.layer);
-      setActiveDrawType(null);
-    };
-
-    switch (activeDrawType) {
-      case "polygon":
-        drawer = new L.Draw.Polygon(map);
-        break;
-      case "polyline":
-        drawer = new L.Draw.Polyline(map);
-        break;
-      case "marker":
-        drawer = new L.Draw.Marker(map);
-        break;
-      default:
-        return;
-    }
-
-    if (drawer) {
-      drawer.enable();
-      map.once(L.Draw.Event.CREATED, handleCreate);
-    }
-
-    return () => {
-      map.off(L.Draw.Event.CREATED, handleCreate);
-      drawer?.disable();
-    };
-  }, [activeDrawType]);
+    drawnItemsRef.current.eachLayer((layer) => {
+      if (!map.hasLayer(layer)) {
+        layer.addTo(map);
+      }
+    });
+  });
 
   return (
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
@@ -452,7 +438,6 @@ const MapPage = () => {
         onUndo={handleUndo}
         onRedo={handleRedo}
         onSave={handleSave}
-        setActiveDrawType={setActiveDrawType}
       />
       <MapContainer
         center={bounds ? bounds.getCenter() : [17.985375, 103.968534]}
@@ -478,4 +463,5 @@ const MapPage = () => {
     </div>
   );
 };
+
 export default MapPage;

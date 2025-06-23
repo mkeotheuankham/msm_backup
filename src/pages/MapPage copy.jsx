@@ -3,9 +3,9 @@ import { MapContainer, ZoomControl } from "react-leaflet";
 import L from "leaflet";
 import axios from "axios";
 import "leaflet/dist/leaflet.css";
-import "leaflet-draw";
-import "leaflet-draw/dist/leaflet.draw.css";
-import { saveAs } from "file-saver";
+import "@geoman-io/leaflet-geoman-free";
+import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+import GeomanControl from "../components/map/GeomanControl";
 import DistrictSelector from "../components/ui/DistrictSelector";
 import LoadingBar from "../components/ui/LoadingBar";
 import FloatingButtons from "../components/ui/FloatingButtons";
@@ -136,6 +136,7 @@ const MapPage = () => {
       hasLoaded: false,
     },
   ]);
+
   const [bounds, setBounds] = useState(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -354,106 +355,161 @@ const MapPage = () => {
     };
   }, []);
 
-  const mapRef = useRef(null);
-  const drawnItemsRef = useRef(new L.FeatureGroup());
-  const redoStack = useRef([]);
-  const [activeDrawType, setActiveDrawType] = useState(null);
+  // สร้าง state เก็บ layer ที่วาด
+  const [drawnLayers, setDrawnLayers] = useState([]);
+  const [activeTool, setActiveTool] = useState(null);
 
+  // ฟังก์ชันจัดการ event create ของ Geoman
+  const handleCreate = (e) => {
+    const layer = e.layer;
+
+    setDrawnLayers((prev) => [...prev, layer]);
+    console.log("Created layer:", layer);
+  };
+
+  // ฟังก์ชัน Undo (ลบ layer ล่าสุด)
   const handleUndo = () => {
-    const layers = drawnItemsRef.current.getLayers();
-    if (layers.length > 0) {
-      const lastLayer = layers[layers.length - 1];
-      drawnItemsRef.current.removeLayer(lastLayer);
-      redoStack.current.push(lastLayer);
-    }
-  };
-
-  const handleRedo = () => {
-    const layer = redoStack.current.pop();
-    if (layer) {
-      drawnItemsRef.current.addLayer(layer);
-    }
-  };
-
-  const handleSave = () => {
-    const geojson = drawnItemsRef.current.toGeoJSON();
-    const blob = new Blob([JSON.stringify(geojson, null, 2)], {
-      type: "application/json",
+    setDrawnLayers((prev) => {
+      if (prev.length === 0) return prev;
+      const newLayers = prev.slice(0, prev.length - 1);
+      return newLayers;
     });
-    saveAs(blob, "drawn_layers.geojson");
+  };
+
+  // ฟังก์ชัน Redo (ถ้ามีประวัติไว้เก็บไว้ ต้องทำเพิ่มเอง)
+  const handleRedo = () => {
+    // สำหรับตัวอย่างนี้ยังไม่ทำ
+    alert("Redo ยังไม่พร้อมใช้งาน");
+  };
+
+  // ฟังก์ชัน Save
+  const handleSave = () => {
+    const geojsons = drawnLayers.map((layer) => layer.toGeoJSON());
+    console.log("Saved GeoJSON:", geojsons);
+    alert("บันทึกข้อมูลลง console แล้ว");
   };
 
   const handleUploadCSV = () => {
     alert("Upload CSV ยังไม่พร้อมใช้งาน");
   };
 
+  const handleEdit = (e) => {
+    console.log("Edited layers:", e.layers);
+    alert("แก้ไขรูปทรงแล้ว");
+  };
+
+  const handleDelete = (e) => {
+    console.log("Deleted layers:", e.layers);
+    alert("ลบรูปทรงแล้ว");
+  };
+
+  // เมื่อ drawnLayers เปลี่ยน ต้องอัพเดต map
+  // ใช้ useEffect เพื่อเพิ่ม/ลบ layers บน map
+  const mapRef = useRef(null);
+
+  // ... (imports และโค้ดอื่น ๆ คงเดิม)
+
+  // useEffect เพิ่ม Layer ที่วาดใหม่
   useEffect(() => {
     if (!mapRef.current) return;
-    const map = mapRef.current;
-    map.addLayer(drawnItemsRef.current);
 
-    const drawControl = new L.Control.Draw({
-      position: "topright",
-      draw: false,
-      edit: {
-        featureGroup: drawnItemsRef.current,
+    const map = mapRef.current;
+
+    map.eachLayer((layer) => {
+      if (
+        layer?.pm?.enabled ||
+        drawnLayers.find((l) => l._leaflet_id === layer._leaflet_id) ===
+          undefined
+      ) {
+        // do nothing เพราะอาจเป็น basemap หรืออื่น ๆ
+      }
+    });
+
+    drawnLayers.forEach((layer) => {
+      if (!map.hasLayer(layer)) {
+        layer.addTo(map);
+      }
+    });
+  }, [drawnLayers]);
+
+  // ✅ useEffect สำหรับ Measure Tool
+  useEffect(() => {
+    if (!mapRef.current || activeTool !== "measure") return;
+
+    const map = mapRef.current;
+
+    const control = L.control.polylineMeasure({
+      position: "topleft",
+      unit: "metres",
+      showBearings: false,
+      clearMeasurementsOnStop: false,
+      showUnitControl: true,
+      tempLine: {
+        color: "#00f",
+        weight: 2,
+      },
+      fixedLine: {
+        color: "#006",
+        weight: 2,
+      },
+      startCircle: {
+        color: "#000",
+        weight: 1,
+      },
+      endCircle: {
+        color: "#000",
+        weight: 1,
       },
     });
 
-    map.addControl(drawControl);
+    map.addControl(control);
+    control._startMeasuring();
 
     return () => {
-      map.removeControl(drawControl);
+      map.removeControl(control);
     };
-  }, []);
+  }, [activeTool]);
 
+  // ✅ เพิ่ม useEffect สำหรับ Text Tool
   useEffect(() => {
-    if (!mapRef.current || !activeDrawType) return;
+    if (!mapRef.current || activeTool !== "text") return;
+
     const map = mapRef.current;
 
-    let drawer = null;
-    const handleCreate = (e) => {
-      drawnItemsRef.current.addLayer(e.layer);
-      setActiveDrawType(null);
+    const handleClick = (e) => {
+      const text = prompt("Enter text:");
+      if (text) {
+        const marker = L.marker(e.latlng, {
+          icon: L.divIcon({
+            className: "custom-text-label",
+            html: `<div style='color:white; background:rgba(0,0,0,0.6); padding:2px 6px; border-radius:4px; font-size:14px;'>${text}</div>`,
+          }),
+          interactive: false,
+        });
+        marker.addTo(map);
+      }
     };
 
-    switch (activeDrawType) {
-      case "polygon":
-        drawer = new L.Draw.Polygon(map);
-        break;
-      case "polyline":
-        drawer = new L.Draw.Polyline(map);
-        break;
-      case "marker":
-        drawer = new L.Draw.Marker(map);
-        break;
-      default:
-        return;
-    }
-
-    if (drawer) {
-      drawer.enable();
-      map.once(L.Draw.Event.CREATED, handleCreate);
-    }
+    map.on("click", handleClick);
 
     return () => {
-      map.off(L.Draw.Event.CREATED, handleCreate);
-      drawer?.disable();
+      map.off("click", handleClick);
     };
-  }, [activeDrawType]);
+  }, [activeTool]);
 
   return (
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
       <LoadingBar isLoading={isLoading} loadingProgress={loadingProgress} />
+
       <FloatingButtons
-        activeTool={null}
-        setActiveTool={() => {}}
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
         onUploadCSV={handleUploadCSV}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onSave={handleSave}
-        setActiveDrawType={setActiveDrawType}
       />
+
       <MapContainer
         center={bounds ? bounds.getCenter() : [17.985375, 103.968534]}
         zoom={7}
@@ -464,13 +520,22 @@ const MapPage = () => {
         whenCreated={(mapInstance) => (mapRef.current = mapInstance)}
       >
         <BasemapSelector />
+
         <ZoomControl position="bottomright" />
         <ParcelLayer
           districts={districts}
           getParcelStyle={getParcelStyle}
           onEachFeature={onEachFeature}
         />
+
+        <GeomanControl
+          activeTool={activeTool}
+          onCreate={handleCreate}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       </MapContainer>
+
       <DistrictSelector
         districts={districts}
         handleDistrictToggle={handleDistrictToggle}
@@ -478,4 +543,5 @@ const MapPage = () => {
     </div>
   );
 };
+
 export default MapPage;

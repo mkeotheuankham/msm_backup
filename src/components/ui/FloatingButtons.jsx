@@ -1,4 +1,3 @@
-// FloatingButtons.jsx
 import React, { useState } from "react";
 import {
   FiMap,
@@ -20,13 +19,20 @@ const FloatingButtons = ({
   onUndo,
   onRedo,
   onSave,
+  setActiveDrawType,
 }) => {
   const [language, setLanguage] = useState("la"); // 'la' = Lao, 'en' = English
-  const isActive = (tool) => activeTool === tool;
+  const [currentDrawType, setCurrentDrawType] = useState(null);
+  const isActive = (tool) => currentDrawType === tool;
   const t = (en, la) => (language === "en" ? en : la);
 
   const toggleLanguage = () => {
     setLanguage((prev) => (prev === "en" ? "la" : "en"));
+  };
+
+  const handleDrawClick = (type) => {
+    setActiveDrawType(type);
+    setCurrentDrawType(type);
   };
 
   return (
@@ -55,58 +61,22 @@ const FloatingButtons = ({
         label={`${t("Draw", "ວາດ")}`}
         items={[
           {
-            name: "point",
-            label: `${isActive("point") ? "✔ " : ""}${t("Point", "ຈຸດ")}`,
-            onClick: () => setActiveTool("point"),
+            name: "draw_polygon",
+            label: t("Polygon", "ພື້ນທີ່"),
+            onClick: () => handleDrawClick("polygon"),
+            active: isActive("polygon"),
           },
           {
-            name: "line",
-            label: `${isActive("line") ? "✔ " : ""}${t("Line", "ເສັ້ນ")}`,
-            onClick: () => setActiveTool("line"),
+            name: "draw_polyline",
+            label: t("Line", "ເສັ້ນ"),
+            onClick: () => handleDrawClick("polyline"),
+            active: isActive("polyline"),
           },
           {
-            name: "area",
-            label: `${isActive("area") ? "✔ " : ""}${t("Area", "ພື້ນທີ່")}`,
-            onClick: () => setActiveTool("area"),
-          },
-          {
-            name: "text",
-            label: `${isActive("text") ? "✔ " : ""}${t("Text", "ຂໍ້ຄວາມ")}`,
-            onClick: () => setActiveTool("text"),
-          },
-          {
-            name: "circlemarker",
-            label: `${isActive("circlemarker") ? "✔ " : ""}${t(
-              "Circle",
-              "ວົງມົນ"
-            )}`,
-            onClick: () => setActiveTool("circlemarker"),
-          },
-        ]}
-      />
-
-      {/* Edit Tools */}
-      <DropdownButton
-        icon={<FiEdit2 />}
-        label={`${t("Edit", "ແກ້ໄຂ")}`}
-        items={[
-          {
-            name: "edit",
-            label: `${isActive("edit") ? "✔ " : ""}${t("Edit Mode", "ແກ້ໄຂ")}`,
-            onClick: () => setActiveTool("edit"),
-          },
-          {
-            name: "delete",
-            label: `${isActive("delete") ? "✔ " : ""}${t(
-              "Delete Mode",
-              "ລຶບ"
-            )}`,
-            onClick: () => setActiveTool("delete"),
-          },
-          {
-            name: "cut",
-            label: `${isActive("cut") ? "✔ " : ""}${t("Cut", "ຕັດ")}`,
-            onClick: () => setActiveTool("cut"),
+            name: "draw_marker",
+            label: t("Point", "ຈຸດ"),
+            onClick: () => handleDrawClick("marker"),
+            active: isActive("marker"),
           },
         ]}
       />
@@ -138,19 +108,6 @@ const FloatingButtons = ({
         onClick={() => alert("Search function")}
       >
         <FiSearch /> {t("Search", "ຄົ້ນຫາ")}
-      </button>
-
-      {/* Measure */}
-      <button
-        style={{
-          ...buttonStyle,
-          transition: "all 0.2s ease",
-          background: isActive("measure") ? "rgba(0,123,255,0.3)" : undefined,
-        }}
-        title={t("Measure", "ວັດໄລຍະ")}
-        onClick={() => setActiveTool("measure")}
-      >
-        <FaRuler /> {t("Measure", "ວັດໄລຍະ")}
       </button>
 
       {/* Command Buttons */}
@@ -204,6 +161,10 @@ const FloatingButtons = ({
         }
         button:hover {
           transform: scale(1.05);
+        }
+        .dropdown-item.active {
+          background-color: #0d6efd !important;
+          color: white !important;
         }
       `}</style>
     </div>
