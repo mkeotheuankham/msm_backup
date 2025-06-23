@@ -396,51 +396,76 @@ const MapPage = () => {
     alert("Upload CSV function will be implemented later");
   };
 
-  // Initialize map and draw controls
+  // ໃນ useEffect ສຳລັບການແຕ້ມ
   useEffect(() => {
     if (!mapRef.current) return;
     const map = mapRef.current;
+
+    // ເພີ່ມ drawn items ເຂົ້າໃນ map
     map.addLayer(drawnItemsRef.current);
 
+    // ສ້າງ draw control
     const drawControl = new L.Control.Draw({
       position: "topright",
-      draw: false,
+      draw: {
+        polygon: {
+          shapeOptions: {
+            color: "#3388ff",
+            fillColor: "#3388ff",
+            fillOpacity: 0.5,
+            weight: 3,
+          },
+          allowIntersection: false,
+          showArea: true,
+        },
+        polyline: {
+          shapeOptions: {
+            color: "#ff5733",
+            weight: 4,
+          },
+        },
+        marker: {
+          icon: new L.Icon.Default(),
+        },
+        circle: false,
+        rectangle: false,
+        circlemarker: false,
+      },
       edit: {
         featureGroup: drawnItemsRef.current,
-        edit: false,
+        remove: true,
       },
     });
 
     map.addControl(drawControl);
 
-    return () => {
-      map.removeControl(drawControl);
-    };
-  }, []);
-
-  // Handle drawing tools
-  useEffect(() => {
-    if (!mapRef.current || !activeDrawType) {
-      if (drawer) {
-        drawer.disable();
-        setDrawer(null);
-      }
-      return;
-    }
-
-    const map = mapRef.current;
-    let newDrawer = null;
-
+    // ຈັດການເມື່ອສ້າງ layer ໃໝ່
     const handleCreate = (e) => {
       const layer = e.layer;
       drawnItemsRef.current.addLayer(layer);
       undoStack.current.push(layer);
       redoStack.current = [];
+      setActiveDrawType(null); // ລະບົບສະຖານະເມື່ອແຕ້ມແລ້ວ
     };
+
+    map.on(L.Draw.Event.CREATED, handleCreate);
+
+    return () => {
+      map.removeControl(drawControl);
+      map.off(L.Draw.Event.CREATED, handleCreate);
+    };
+  }, []);
+
+  // ໃນ useEffect ສຳລັບ activeDrawType
+  useEffect(() => {
+    if (!mapRef.current || !activeDrawType) return;
+    const map = mapRef.current;
+
+    let drawingTool = null;
 
     switch (activeDrawType) {
       case "polygon":
-        newDrawer = new L.Draw.Polygon(map, {
+        drawingTool = new L.Draw.Polygon(map, {
           shapeOptions: {
             color: "#3388ff",
             fillColor: "#3388ff",
@@ -450,7 +475,7 @@ const MapPage = () => {
         });
         break;
       case "polyline":
-        newDrawer = new L.Draw.Polyline(map, {
+        drawingTool = new L.Draw.Polyline(map, {
           shapeOptions: {
             color: "#ff5733",
             weight: 4,
@@ -458,21 +483,20 @@ const MapPage = () => {
         });
         break;
       case "marker":
-        newDrawer = new L.Draw.Marker(map);
+        drawingTool = new L.Draw.Marker(map);
         break;
       default:
         return;
     }
 
-    if (newDrawer) {
-      newDrawer.enable();
-      map.on(L.Draw.Event.CREATED, handleCreate);
-      setDrawer(newDrawer);
+    if (drawingTool) {
+      drawingTool.enable();
     }
 
     return () => {
-      map.off(L.Draw.Event.CREATED, handleCreate);
-      newDrawer?.disable();
+      if (drawingTool) {
+        drawingTool.disable();
+      }
     };
   }, [activeDrawType]);
 

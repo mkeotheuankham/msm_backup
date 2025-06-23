@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
   FiMap,
   FiEdit2,
@@ -7,246 +7,356 @@ import {
   FiRotateCw,
   FiSave,
   FiGlobe,
-  FiSearch,
-  FiX,
+  FiScissors,
+  FiLayers,
+  FiZoomIn,
+  FiZoomOut,
+  FiInfo,
+  FiTrash2,
 } from "react-icons/fi";
-import { FaRuler } from "react-icons/fa";
-import DropdownButton from "./DropdownButton";
+import { FaRuler, FaRulerCombined } from "react-icons/fa";
+import { MdOutlineAreaChart } from "react-icons/md";
 
 const FloatingButtons = ({
-  activeTool,
-  setActiveTool,
   onUploadCSV,
   onUndo,
   onRedo,
   onSave,
-  setActiveDrawType,
+  setActiveTool,
   canUndo,
   canRedo,
+  activeTool,
+  onEdit,
+  onDelete,
+  onCut,
+  onMeasure,
+  onMeasureArea,
+  onShowInfo,
+  onZoomIn,
+  onZoomOut,
+  language,
+  setLanguage,
 }) => {
-  const [language, setLanguage] = useState("la");
-  const [currentDrawType, setCurrentDrawType] = useState(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-
   const t = (en, la) => (language === "en" ? en : la);
 
-  const toggleLanguage = () => {
-    setLanguage((prev) => (prev === "en" ? "la" : "en"));
-  };
+  // ປຸ່ມເຄື່ອງມືຕົ້ນຕໍ
+  const mainTools = [
+    {
+      name: "select",
+      icon: <FiLayers />,
+      label: t("Select", "ເລືອກ"),
+      action: () => setActiveTool("select"),
+    },
+    {
+      name: "edit",
+      icon: <FiEdit2 />,
+      label: t("Edit", "ແກ້ໄຂ"),
+      action: onEdit,
+    },
+    {
+      name: "delete",
+      icon: <FiTrash2 />,
+      label: t("Delete", "ລຶບ"),
+      action: onDelete,
+    },
+    {
+      name: "cut",
+      icon: <FiScissors />,
+      label: t("Cut", "ຕັດ"),
+      action: onCut,
+    },
+    {
+      name: "measure",
+      icon: <FaRuler />,
+      label: t("Measure", "ວັດແທກ"),
+      action: onMeasure,
+    },
+    {
+      name: "measureArea",
+      icon: <MdOutlineAreaChart />,
+      label: t("Measure Area", "ວັດແທກພື້ນທີ່"),
+      action: onMeasureArea,
+    },
+    {
+      name: "info",
+      icon: <FiInfo />,
+      label: t("Info", "ຂໍ້ມູນ"),
+      action: onShowInfo,
+    },
+  ];
 
-  const handleDrawClick = (type) => {
-    if (currentDrawType === type) {
-      // Cancel drawing if same tool is clicked again
-      setCurrentDrawType(null);
-      setActiveDrawType(null);
-      setIsDrawing(false);
-    } else {
-      setCurrentDrawType(type);
-      setActiveDrawType(type);
-      setIsDrawing(true);
-    }
-  };
-
-  const cancelDrawing = () => {
-    setCurrentDrawType(null);
-    setActiveDrawType(null);
-    setIsDrawing(false);
-  };
-
-  useEffect(() => {
-    if (!activeTool) {
-      setCurrentDrawType(null);
-      setIsDrawing(false);
-    }
-  }, [activeTool]);
+  // ປຸ່ມການແຕ້ມ
+  const drawTools = [
+    {
+      name: "polygon",
+      icon: <FiMap style={{ transform: "rotate(45deg)" }} />,
+      label: t("Polygon", "ພື້ນທີ່"),
+      action: () => setActiveTool("polygon"),
+    },
+    {
+      name: "polyline",
+      icon: <FiEdit2 />,
+      label: t("Line", "ເສັ້ນ"),
+      action: () => setActiveTool("polyline"),
+    },
+    {
+      name: "marker",
+      icon: <FaRulerCombined size={14} />,
+      label: t("Point", "ຈຸດ"),
+      action: () => setActiveTool("marker"),
+    },
+    {
+      name: "rectangle",
+      icon: <FiMap />,
+      label: t("Rectangle", "ຮູບສີ່ແຈ"),
+      action: () => setActiveTool("rectangle"),
+    },
+    {
+      name: "circle",
+      icon: <FiMap />,
+      label: t("Circle", "ວົງມົນ"),
+      action: () => setActiveTool("circle"),
+    },
+  ];
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: 160,
-        left: 10,
-        background: "rgba(0, 0, 0, 0.5)",
-        padding: "10px 10px",
-        borderRadius: "10px",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        zIndex: 1002,
-        backdropFilter: "blur(10px)",
-        border: "1px solid rgba(255, 255, 255, 0.2)",
-        transition: "all 0.3s ease",
-        animation: "fadeSlideIn 0.4s ease-out",
-      }}
-    >
-      {/* Cancel drawing button (visible when drawing) */}
-      {isDrawing && (
+    <div className="vertical-toolbar">
+      {/* ປຸ່ມ Upload CSV */}
+      <button
+        className={`tool-button ${activeTool === "upload" ? "active" : ""}`}
+        onClick={onUploadCSV}
+        title={t("Upload CSV", "ເພີ່ມ CSV")}
+      >
+        <FiUpload />
+        <span className="button-label">{t("Upload", "ເພີ່ມ")}</span>
+      </button>
+
+      {/* ປຸ່ມການແຕ້ມ */}
+      <div className="tool-section">
+        <h4 className="section-title">{t("Draw Tools", "ເຄື່ອງມືການແຕ້ມ")}</h4>
+        {drawTools.map((tool) => (
+          <button
+            key={tool.name}
+            className={`tool-button ${
+              activeTool === tool.name ? "active" : ""
+            }`}
+            onClick={tool.action}
+            title={tool.label}
+          >
+            {tool.icon}
+            <span className="button-label">{tool.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ປຸ່ມເຄື່ອງມືຕົ້ນຕໍ */}
+      <div className="tool-section">
+        <h4 className="section-title">{t("Main Tools", "ເຄື່ອງມືຫຼັກ")}</h4>
+        {mainTools.map((tool) => (
+          <button
+            key={tool.name}
+            className={`tool-button ${
+              activeTool === tool.name ? "active" : ""
+            }`}
+            onClick={tool.action}
+            title={tool.label}
+          >
+            {tool.icon}
+            <span className="button-label">{tool.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* ປຸ່ມ Zoom */}
+      <div className="tool-section">
+        <h4 className="section-title">{t("Zoom", "ຂະຫຍາຍ/ຍ້ອນ")}</h4>
+        <div className="zoom-controls">
+          <button onClick={onZoomIn} title={t("Zoom In", "ຂະຫຍາຍ")}>
+            <FiZoomIn />
+            <span className="button-label">{t("Zoom In", "ຂະຫຍາຍ")}</span>
+          </button>
+          <button onClick={onZoomOut} title={t("Zoom Out", "ຍ້ອນອອກ")}>
+            <FiZoomOut />
+            <span className="button-label">{t("Zoom Out", "ຍ້ອນອອກ")}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ປຸ່ມ Undo/Redo/Save */}
+      <div className="tool-section">
+        <h4 className="section-title">{t("Actions", "ການກະທຳ")}</h4>
         <button
-          onClick={cancelDrawing}
-          style={{
-            ...buttonStyle,
-            background: "rgba(255, 50, 50, 0.7)",
-            color: "white",
-            fontWeight: 600,
-            justifyContent: "center",
-          }}
+          className={`tool-button ${!canUndo ? "disabled" : ""}`}
+          onClick={canUndo ? onUndo : null}
+          title={t("Undo", "ກັບຄືນ")}
         >
-          <FiX /> {t("Cancel Drawing", "ຍົກເລີກການແຕ້ມ")}
+          <FiRotateCcw />
+          <span className="button-label">{t("Undo", "ກັບຄືນ")}</span>
         </button>
-      )}
+        <button
+          className={`tool-button ${!canRedo ? "disabled" : ""}`}
+          onClick={canRedo ? onRedo : null}
+          title={t("Redo", "ທຳຊ້ຳ")}
+        >
+          <FiRotateCw />
+          <span className="button-label">{t("Redo", "ທຳຊ້ຳ")}</span>
+        </button>
+        <button
+          className="tool-button save-button"
+          onClick={onSave}
+          title={t("Save", "ບັນທຶກ")}
+        >
+          <FiSave />
+          <span className="button-label">{t("Save", "ບັນທຶກ")}</span>
+        </button>
+      </div>
 
-      {/* Draw Tools */}
-      <DropdownButton
-        icon={<FiMap />}
-        label={`${t("Draw", "ວາດ")}`}
-        isActive={isDrawing}
-        items={[
-          {
-            name: "draw_polygon",
-            label: t("Polygon", "ພື້ນທີ່"),
-            onClick: () => handleDrawClick("polygon"),
-            active: currentDrawType === "polygon",
-            icon: <FiMap style={{ transform: "rotate(45deg)" }} />,
-          },
-          {
-            name: "draw_polyline",
-            label: t("Line", "ເສັ້ນ"),
-            onClick: () => handleDrawClick("polyline"),
-            active: currentDrawType === "polyline",
-            icon: <FiEdit2 />,
-          },
-          {
-            name: "draw_marker",
-            label: t("Point", "ຈຸດ"),
-            onClick: () => handleDrawClick("marker"),
-            active: currentDrawType === "marker",
-            icon: <FaRuler size={14} />,
-          },
-        ]}
-      />
-
-      {/* Upload Tools */}
-      <DropdownButton
-        icon={<FiUpload />}
-        label={`${t("Upload", "ອັບໂຫຼດ")}`}
-        items={[
-          { name: "csv", label: "CSV", onClick: onUploadCSV },
-          {
-            name: "shp",
-            label: "Shapefile",
-            onClick: () => alert("Upload Shapefile"),
-          },
-          { name: "kml", label: "KML", onClick: () => alert("Upload KML") },
-          {
-            name: "geojson",
-            label: "GeoJSON",
-            onClick: () => alert("Upload GeoJSON"),
-          },
-        ]}
-      />
-
-      {/* Search */}
+      {/* ປຸ່ມປ່ຽນພາສາ */}
       <button
-        style={{ ...buttonStyle, transition: "all 0.2s ease" }}
-        title={t("Search", "ຄົ້ນຫາ")}
-        onClick={() => alert("Search function")}
+        className="tool-button language-button"
+        onClick={() => setLanguage(language === "en" ? "la" : "en")}
+        title={t("Toggle Language", "ປ່ຽນພາສາ")}
       >
-        <FiSearch /> {t("Search", "ຄົ້ນຫາ")}
+        <FiGlobe />
+        <span className="button-label">
+          {language === "en" ? "ພາສາລາວ" : "English"}
+        </span>
       </button>
 
-      {/* Command Buttons */}
-      <button
-        style={{
-          ...buttonStyle,
-          transition: "all 0.2s ease",
-          opacity: canUndo ? 1 : 0.5,
-          cursor: canUndo ? "pointer" : "not-allowed",
-        }}
-        title="Undo"
-        onClick={canUndo ? onUndo : null}
-      >
-        <FiRotateCcw /> {t("Undo", "ກັບຄືນ")}
-      </button>
-      <button
-        style={{
-          ...buttonStyle,
-          transition: "all 0.2s ease",
-          opacity: canRedo ? 1 : 0.5,
-          cursor: canRedo ? "pointer" : "not-allowed",
-        }}
-        title="Redo"
-        onClick={canRedo ? onRedo : null}
-      >
-        <FiRotateCw /> {t("Redo", "ທຳຊ້ຳ")}
-      </button>
-      <button
-        style={{
-          ...buttonStyle,
-          background: "rgba(0, 123, 255, 0.8)",
-          color: "#fff",
-          border: "none",
-          fontWeight: 600,
-          transition: "all 0.2s ease",
-        }}
-        title="Save"
-        onClick={onSave}
-      >
-        <FiSave /> {t("Save", "ບັນທຶກ")}
-      </button>
-
-      {/* Language Switch */}
-      <button
-        onClick={toggleLanguage}
-        style={{
-          ...buttonStyle,
-          marginTop: 4,
-          justifyContent: "center",
-          fontWeight: 500,
-        }}
-        title="Toggle Language"
-      >
-        <FiGlobe /> {language === "en" ? "ປ່ຽນເປັນລາວ" : "Switch to English"}
-      </button>
-
-      <style>{`
-        @keyframes fadeSlideIn {
-          0% {
-            opacity: 0;
-            transform: translateY(-15px) scale(0.95);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
+      <style jsx>{`
+        .vertical-toolbar {
+          position: absolute;
+          top: 50%;
+          left: 10px;
+          transform: translateY(-50%);
+          background: rgba(0, 0, 0, 0.8);
+          padding: 12px;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          z-index: 1000;
+          backdrop-filter: blur(8px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          max-height: 90vh;
+          overflow-y: auto;
         }
-        button:hover {
-          transform: scale(1.05);
-          background: rgba(255, 255, 255, 0.2) !important;
+
+        .tool-section {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 12px;
         }
-        .dropdown-item.active {
-          background-color: #0d6efd !important;
-          color: white !important;
+
+        .section-title {
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 12px;
+          margin: 4px 0;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+
+        .tool-button {
+          background: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          padding: 8px 12px;
+          border-radius: 6px;
+          color: white;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+          width: 100%;
+        }
+
+        .tool-button:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .tool-button.active {
+          background: rgba(0, 123, 255, 0.8);
+          border-color: rgba(0, 123, 255, 0.9);
+        }
+
+        .tool-button.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .save-button {
+          background: rgba(0, 123, 255, 0.8);
+          border-color: rgba(0, 123, 255, 0.9);
+        }
+
+        .language-button {
+          margin-top: 8px;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.15);
+        }
+
+        .zoom-controls {
+          display: flex;
+          gap: 8px;
+        }
+
+        .zoom-controls button {
+          flex: 1;
+        }
+
+        .button-label {
+          white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+          .vertical-toolbar {
+            top: auto;
+            bottom: 10px;
+            left: 10px;
+            transform: none;
+            flex-direction: row;
+            max-height: none;
+            max-width: 90vw;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 8px;
+          }
+
+          .tool-section {
+            flex-direction: row;
+            border-bottom: none;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0;
+            padding-right: 12px;
+            margin-right: 12px;
+          }
+
+          .section-title {
+            display: none;
+          }
+
+          .tool-button {
+            min-width: 40px;
+            justify-content: center;
+            padding: 8px;
+          }
+
+          .button-label {
+            display: none;
+          }
+
+          .zoom-controls {
+            flex-direction: column;
+          }
         }
       `}</style>
     </div>
   );
-};
-
-const buttonStyle = {
-  background: "rgba(255, 255, 255, 0.1)",
-  border: "1px solid rgba(255,255,255,0.3)",
-  padding: "8px 12px",
-  borderRadius: "8px",
-  fontSize: "14px",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  fontWeight: 500,
-  backdropFilter: "blur(8px)",
-  color: "#fff",
-  transition: "all 0.2s ease",
 };
 
 export default FloatingButtons;
