@@ -11,6 +11,10 @@ import LoadingBar from "../components/ui/LoadingBar";
 import FloatingButtons from "../components/ui/FloatingButtons";
 import ParcelLayer from "../components/map/ParcelLayer";
 import BasemapSelector from "../components/map/BasemapSelector";
+import "leaflet-measure/dist/leaflet-measure.css";
+import "leaflet-measure";
+import "leaflet.polylinemeasure";
+import "leaflet.polylinemeasure/Leaflet.PolylineMeasure.css";
 
 // ຕັ້ງຄ່າໄອຄອນ Marker ເລີ່ມຕົ້ນ
 delete L.Icon.Default.prototype._getIconUrl;
@@ -391,24 +395,26 @@ const MapPage = () => {
 
   const handleEdit = (e) => {
     console.log("Edited layers:", e.layers);
-    alert("แก้ไขรูปทรงแล้ว (ดูข้อมูลใน console)");
+    alert("แก้ไขรูปทรงแล้ว");
   };
 
   const handleDelete = (e) => {
     console.log("Deleted layers:", e.layers);
-    alert("ลบรูปทรงแล้ว (ดูข้อมูลใน console)");
+    alert("ลบรูปทรงแล้ว");
   };
 
   // เมื่อ drawnLayers เปลี่ยน ต้องอัพเดต map
   // ใช้ useEffect เพื่อเพิ่ม/ลบ layers บน map
   const mapRef = useRef(null);
 
+  // ... (imports และโค้ดอื่น ๆ คงเดิม)
+
+  // useEffect เพิ่ม Layer ที่วาดใหม่
   useEffect(() => {
     if (!mapRef.current) return;
 
     const map = mapRef.current;
 
-    // เคลียร์ layer เก่า
     map.eachLayer((layer) => {
       if (
         layer?.pm?.enabled ||
@@ -419,13 +425,77 @@ const MapPage = () => {
       }
     });
 
-    // เพิ่ม layers ที่วาด
     drawnLayers.forEach((layer) => {
       if (!map.hasLayer(layer)) {
         layer.addTo(map);
       }
     });
   }, [drawnLayers]);
+
+  // ✅ useEffect สำหรับ Measure Tool
+  useEffect(() => {
+    if (!mapRef.current || activeTool !== "measure") return;
+
+    const map = mapRef.current;
+
+    const control = L.control.polylineMeasure({
+      position: "topleft",
+      unit: "metres",
+      showBearings: false,
+      clearMeasurementsOnStop: false,
+      showUnitControl: true,
+      tempLine: {
+        color: "#00f",
+        weight: 2,
+      },
+      fixedLine: {
+        color: "#006",
+        weight: 2,
+      },
+      startCircle: {
+        color: "#000",
+        weight: 1,
+      },
+      endCircle: {
+        color: "#000",
+        weight: 1,
+      },
+    });
+
+    map.addControl(control);
+    control._startMeasuring();
+
+    return () => {
+      map.removeControl(control);
+    };
+  }, [activeTool]);
+
+  // ✅ เพิ่ม useEffect สำหรับ Text Tool
+  useEffect(() => {
+    if (!mapRef.current || activeTool !== "text") return;
+
+    const map = mapRef.current;
+
+    const handleClick = (e) => {
+      const text = prompt("Enter text:");
+      if (text) {
+        const marker = L.marker(e.latlng, {
+          icon: L.divIcon({
+            className: "custom-text-label",
+            html: `<div style='color:white; background:rgba(0,0,0,0.6); padding:2px 6px; border-radius:4px; font-size:14px;'>${text}</div>`,
+          }),
+          interactive: false,
+        });
+        marker.addTo(map);
+      }
+    };
+
+    map.on("click", handleClick);
+
+    return () => {
+      map.off("click", handleClick);
+    };
+  }, [activeTool]);
 
   return (
     <div style={{ height: "100vh", width: "100%", position: "relative" }}>
